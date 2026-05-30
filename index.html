@@ -167,6 +167,7 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
       <button class="btn-sm" id="btn-hist-tab" onclick="toggleHistory()">🕐 過去データ</button>
       <button class="btn-sm" id="btn-total-tab" onclick="toggleTotal()">📈 全店舗合計</button>
       <button class="btn-sm" id="btn-trend-tab" onclick="toggleTrend()">📉 推移・比較</button>
+      <button class="btn-sm" id="btn-staffcfg-tab" onclick="toggleStaffConfig()">⚙️ スタッフ設定</button>
       <button class="btn-sm" id="btn-nonstore-tab" onclick="toggleNonStore()">🏢 非店舗データ</button>
       <button class="btn-sm" onclick="backToUpload()">← トップに戻る</button>
     </div>
@@ -283,6 +284,25 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
       </div>
       <div id="insight-store"></div>
     </div>
+  </div>
+  <div id="staffcfg-panel" style="display:none;padding:24px;">
+    <div class="section-title">⚙️ スタッフ表示設定</div>
+    <div class="notice">月ごと・店舗ごとに、ランキングに表示するスタッフを選べます。設定はその月・その店舗だけに反映されます（他の月には影響しません）。新しい月を開くと直前の月の設定が初期値として引き継がれます。</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin:20px 0;">
+      <div>
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">年</label>
+        <select id="cfg-year" onchange="onCfgYearChange()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);font-family:'Noto Sans JP',sans-serif;font-size:13px;background:var(--surface);min-width:120px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">月</label>
+        <select id="cfg-month" onchange="renderStaffConfig()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);font-family:'Noto Sans JP',sans-serif;font-size:13px;background:var(--surface);min-width:110px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">店舗</label>
+        <select id="cfg-store" onchange="renderStaffConfig()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);font-family:'Noto Sans JP',sans-serif;font-size:13px;background:var(--surface);min-width:220px;"></select>
+      </div>
+    </div>
+    <div id="cfg-content"></div>
   </div>
   <div id="nonstore-panel">
     <div class="section-title">非店舗データ一覧</div>
@@ -1606,16 +1626,173 @@ function renderStaffPanel(settingMode){
 
 function saveAndBack(){saveHiddenStaff();renderStaffPanel(false);}
 
+// ========== スタッフ設定（独立画面・年月店舗選択式） ==========
+function toggleStaffConfig(){
+  var p=document.getElementById('staffcfg-panel');
+  var btn=document.getElementById('btn-staffcfg-tab');
+  var opening=(p.style.display==='none'||!p.style.display);
+  // 全パネルを隠す
+  ['history-panel','total-panel','trend-panel','nonstore-panel','overview','detail'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  ['btn-hist-tab','btn-total-tab','btn-trend-tab','btn-nonstore-tab'].forEach(function(id){
+    var b=document.getElementById(id); if(b) b.classList.remove('active');
+  });
+  if(opening){
+    p.style.display='block';
+    btn.classList.add('active');
+    initStaffConfig();
+  }else{
+    p.style.display='none';
+    document.getElementById('overview').style.display='block';
+    btn.classList.remove('active');
+  }
+}
+
+// 対象年月キーを取得
+function cfgNengetsu(){
+  var y=document.getElementById('cfg-year').value;
+  var m=document.getElementById('cfg-month').value;
+  if(!y||!m) return '';
+  return y+('0'+m).slice(-2);
+}
+
+async function initStaffConfig(){
+  // trendData（全月分）を確保
+  if(!trendData||trendData.length===0){ try{ await loadTrendData(); }catch(e){} }
+  var ysel=document.getElementById('cfg-year');
+  var years={};
+  (trendData||[]).forEach(function(h){years[String(h.nengetsu).slice(0,4)]=1;});
+  var yearList=Object.keys(years).sort().reverse();
+  if(yearList.length===0){
+    document.getElementById('cfg-content').innerHTML='<p style="color:var(--text2);">データがありません。先にCSVを読み込んでください。</p>';
+    return;
+  }
+  ysel.innerHTML=yearList.map(function(y){return '<option value="'+y+'">'+y+'年</option>';}).join('');
+  // 現在表示中の年を初期選択
+  var curY=currentNengetsu?String(currentNengetsu).slice(0,4):yearList[0];
+  if(years[curY]) ysel.value=curY;
+  onCfgYearChange();
+}
+
+function onCfgYearChange(){
+  var y=document.getElementById('cfg-year').value;
+  var msel=document.getElementById('cfg-month');
+  // その年に存在する月
+  var months=(trendData||[]).filter(function(h){return String(h.nengetsu).slice(0,4)===y;})
+    .map(function(h){return parseInt(String(h.nengetsu).slice(4,6));})
+    .sort(function(a,b){return a-b;});
+  msel.innerHTML=months.map(function(m){return '<option value="'+m+'">'+m+'月</option>';}).join('');
+  // 現在月があれば選択
+  var curM=currentNengetsu&&String(currentNengetsu).slice(0,4)===y?parseInt(String(currentNengetsu).slice(4,6)):months[months.length-1];
+  if(months.indexOf(curM)>=0) msel.value=curM;
+  renderStaffConfig();
+}
+
+// 対象月の設定を（無ければ引き継ぎコピーで）用意する
+function ensureMonthSettingsFor(nengetsu){
+  if(!nengetsu) return;
+  if(hiddenStaff[nengetsu]) return;
+  var keys=Object.keys(hiddenStaff);
+  var looksOld=keys.length>0&&keys.every(function(k){return !/^\d{6}$/.test(k)&&k!=='__legacy__';});
+  if(looksOld){ hiddenStaff={ '__legacy__': JSON.parse(JSON.stringify(hiddenStaff)) }; }
+  var monthKeys=Object.keys(hiddenStaff).filter(function(k){return /^\d{6}$/.test(k);}).sort();
+  var prev=null; monthKeys.forEach(function(k){ if(k<nengetsu) prev=k; });
+  if(prev) hiddenStaff[nengetsu]=JSON.parse(JSON.stringify(hiddenStaff[prev]));
+  else if(hiddenStaff.__legacy__) hiddenStaff[nengetsu]=JSON.parse(JSON.stringify(hiddenStaff.__legacy__));
+  else hiddenStaff[nengetsu]={};
+}
+
+function renderStaffConfig(){
+  var nengetsu=cfgNengetsu();
+  if(!nengetsu){ return; }
+  ensureMonthSettingsFor(nengetsu);
+  // その月のデータを取得（trendDataから）
+  var rec=(trendData||[]).find(function(h){return String(h.nengetsu)===nengetsu;});
+  var staffData=(rec&&rec.staffData)?rec.staffData:(String(currentNengetsu)===nengetsu?allStaffData:{});
+  // 店舗セレクト
+  var storeSel=document.getElementById('cfg-store');
+  var storeNames=Object.keys(staffData||{});
+  if(storeNames.length===0){
+    document.getElementById('cfg-content').innerHTML='<p style="color:var(--text2);padding:16px 0;">この月のスタッフデータがありません。</p>';
+    storeSel.innerHTML='';
+    return;
+  }
+  // 店舗セレクトを維持（前回選択があれば）
+  var prevStore=storeSel.value;
+  storeSel.innerHTML=storeNames.map(function(n){return '<option value="'+encodeURIComponent(n)+'">'+n+'</option>';}).join('');
+  if(prevStore&&storeNames.indexOf(decodeURIComponent(prevStore))>=0) storeSel.value=prevStore;
+  var storeName=decodeURIComponent(storeSel.value);
+  var staffList=staffData[storeName]||[];
+
+  var m=hiddenStaff[nengetsu][storeName]||{};
+  var hiddenCnt=staffList.filter(function(s){return m[s.name];}).length;
+
+  var rows=staffList.map(function(s){
+    var hidden=!!m[s.name];
+    var encStaff=encodeURIComponent(s.name);
+    var btnStyle='padding:5px 16px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-family:Noto Sans JP,sans-serif;color:#fff;'+(hidden?'background:var(--accent3);':'background:var(--danger);');
+    return '<tr style="'+(hidden?'opacity:0.45;':'')+'">'
+      +'<td>'+s.name+'</td>'
+      +'<td style="text-align:right;font-family:DM Mono,monospace;">'+(s.shimeiTotal>0?s.shimeiTotal+'件':'－')+'</td>'
+      +'<td style="text-align:right;font-family:DM Mono,monospace;">'+(s.totalTime>0?s.totalTime+'h':'－')+'</td>'
+      +'<td style="text-align:center;">'+(hidden?'非表示':'表示')+'</td>'
+      +'<td style="text-align:center;"><button data-staff="'+encStaff+'" onclick="cfgToggleStaff(this)" style="'+btnStyle+'">'+(hidden?'表示に戻す':'非表示にする')+'</button></td>'
+      +'</tr>';
+  }).join('');
+
+  document.getElementById('cfg-content').innerHTML=''
+    +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">'
+    +'<span style="font-size:14px;font-weight:700;">'+nengetsu.slice(0,4)+'年'+parseInt(nengetsu.slice(4,6))+'月 / '+storeName+'</span>'
+    +'<span style="font-size:12px;color:var(--text3);">'+staffList.length+'名中 '+hiddenCnt+'名を非表示</span>'
+    +'<button onclick="cfgShowAll()" style="margin-left:auto;padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;font-family:Noto Sans JP,sans-serif;">全員表示に戻す</button>'
+    +'</div>'
+    +'<table class="store-table"><thead><tr>'
+    +'<th style="text-align:left">スタッフ名</th><th>指名件数</th><th>施術時間</th><th>状態</th><th>操作</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function cfgToggleStaff(btn){
+  var nengetsu=cfgNengetsu();
+  var storeName=decodeURIComponent(document.getElementById('cfg-store').value);
+  var staffName=decodeURIComponent(btn.getAttribute('data-staff'));
+  ensureMonthSettingsFor(nengetsu);
+  if(!hiddenStaff[nengetsu][storeName]) hiddenStaff[nengetsu][storeName]={};
+  var m=hiddenStaff[nengetsu][storeName];
+  if(m[staffName]) delete m[staffName]; else m[staffName]=true;
+  saveHiddenStaff();
+  renderStaffConfig();
+}
+
+function cfgShowAll(){
+  var nengetsu=cfgNengetsu();
+  var storeName=decodeURIComponent(document.getElementById('cfg-store').value);
+  if(hiddenStaff[nengetsu]&&hiddenStaff[nengetsu][storeName]){
+    hiddenStaff[nengetsu][storeName]={};
+    saveHiddenStaff();
+    renderStaffConfig();
+  }
+}
+
+
 function isHidden(storeName,staffName){
-  return hiddenStaff[storeName]&&hiddenStaff[storeName][staffName];
+  var m=hiddenStaff[currentNengetsu];
+  return m&&m[storeName]&&m[storeName][staffName];
+}
+
+// 現在の月の設定が未作成なら、直前の設定済みの月からコピーして引き継ぐ
+function ensureMonthSettings(){
+  ensureMonthSettingsFor(currentNengetsu);
 }
 
 function handleToggleStaff(btn){
   var storeName=decodeURIComponent(btn.getAttribute('data-store'));
   var staffName=decodeURIComponent(btn.getAttribute('data-staff'));
-  if(!hiddenStaff[storeName]) hiddenStaff[storeName]={};
-  if(hiddenStaff[storeName][staffName]) delete hiddenStaff[storeName][staffName];
-  else hiddenStaff[storeName][staffName]=true;
+  if(!hiddenStaff[currentNengetsu]) hiddenStaff[currentNengetsu]={};
+  if(!hiddenStaff[currentNengetsu][storeName]) hiddenStaff[currentNengetsu][storeName]={};
+  var m=hiddenStaff[currentNengetsu][storeName];
+  if(m[staffName]) delete m[staffName];
+  else m[staffName]=true;
   var hidden=isHidden(storeName,staffName);
   var tr=btn.parentElement.parentElement;
   tr.style.opacity=hidden?'0.4':'1';
@@ -1624,7 +1801,7 @@ function handleToggleStaff(btn){
   btn.style.background=hidden?'var(--accent3)':'var(--danger)';
   var saveBtn=document.getElementById('staff-save-btn');
   if(saveBtn){
-    var cnt=Object.keys(hiddenStaff[storeName]||{}).length;
+    var cnt=Object.keys(m).length;
     saveBtn.textContent='💾 保存して戻る'+(cnt>0?' ('+cnt+'人非表示)':'');
     saveBtn.style.background='linear-gradient(135deg,var(--accent),var(--accent2))';
     saveBtn.style.color='#fff';
@@ -1633,6 +1810,7 @@ function handleToggleStaff(btn){
 }
 
 function buildStaffSection(storeName,settingMode){
+  ensureMonthSettings();
   var staffList=allStaffData[storeName];
   if(!staffList||staffList.length===0){
     return '<p style="color:var(--text2);font-size:13px;padding:16px 0;">スタッフデータがありません</p>';
@@ -1679,6 +1857,7 @@ function buildStaffSection(storeName,settingMode){
   var jyushiAvg=visible.length>0?(totalTime/visible.length).toFixed(2):0;
 
   var hiddenCnt=staffList.filter(function(s){return isHidden(storeName,s.name);}).length;
+
 
   var tabs='<div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">'
     +'<button id="tab-summary" onclick="switchStaffTab(\'summary\')" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#059669,#3b7de8);color:#fff;font-family:Noto Sans JP,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 店舗サマリー</button>'
