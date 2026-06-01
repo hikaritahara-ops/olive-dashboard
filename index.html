@@ -45,6 +45,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 #dz-s{--cc:#1f7a3a;background:linear-gradient(160deg,#dcf6dc,#abe9b1);border-color:#8fdf9a;}
 .dz:hover{transform:translateY(-4px) scale(1.015);box-shadow:0 14px 30px rgba(0,0,0,.12);}
 .dz.ok{box-shadow:0 0 0 3px #fff inset,0 10px 24px rgba(0,0,0,.14);}
+.dz.ng{box-shadow:0 0 0 2px #e74c3c inset,0 6px 16px rgba(231,76,60,.18)!important;}
+.dz.ng .dz-fname{color:#c0392b!important;}
 .dz.ok::after{content:'✓';position:absolute;top:8px;right:9px;width:18px;height:18px;border-radius:50%;background:var(--cc);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;}
 .dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:5;}
 .dz-icon{font-size:24px;margin-bottom:7px;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.12));}
@@ -156,6 +158,8 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
     <div class="dz" id="dz-y"><input type="file" accept=".csv" onchange="load('y',this)"><span class="dz-icon">🚫</span><div class="dz-label">予約お断り表</div><div class="dz-hint">予約お断り表YYYYMM.csv</div><div class="dz-fname" id="fn-y">未選択</div></div>
     <div class="dz" id="dz-s"><input type="file" accept=".csv" onchange="load('s',this)"><span class="dz-icon">💆</span><div class="dz-label">店舗別指名表</div><div class="dz-hint">店舗別指名表YYYYMM.csv</div><div class="dz-fname" id="fn-s">未選択</div></div>
   </div>
+  <div id="upload-error" style="display:none;width:100%;max-width:620px;margin-bottom:14px;padding:14px 18px;background:#fdecec;border:1px solid #f5b5b5;border-radius:12px;color:#c0392b;font-size:13px;line-height:1.7;font-weight:500;"></div>
+  <div id="upload-okmsg" style="display:none;width:100%;max-width:620px;margin-bottom:14px;padding:12px 18px;background:#e9f8ee;border:1px solid #a7e3bc;border-radius:12px;color:#1f7a3a;font-size:13px;font-weight:600;"></div>
   <button class="btn-start" id="btn-start" disabled onclick="buildDashboard()">▶  ダッシュボードを表示</button>
   <button class="btn-history" onclick="showHistoryScreen()">🕐  過去データを見る</button>
 </div>
@@ -351,17 +355,131 @@ var allStaffData={}, hiddenStaff={};
 var rawUriageText='';
 
 // ========== FILE LOAD ==========
+var fileMeta={u:null,m:null,y:null,s:null}; // {fname, nengetsu, typeOk}
+
+// 各枠が期待するファイル名キーワード（表記ゆれ許容）
+var TYPE_RULES={
+  u:{label:'売上報告書', test:function(n){return n.indexOf('売上報告書')>=0;}},
+  m:{label:'13ヵ月連続集計表', test:function(n){return /13\s*[ヵヶカか]?月連続集計表/.test(n)||n.indexOf('13ヵ月連続集計表')>=0||n.indexOf('連続集計')>=0;}},
+  y:{label:'予約お断り表', test:function(n){return n.indexOf('予約お断り')>=0||n.indexOf('お断り表')>=0||n.indexOf('おことわり')>=0;}},
+  s:{label:'店舗別指名表', test:function(n){return n.indexOf('店舗別指名表')>=0||n.indexOf('指名表')>=0;}}
+};
+// 他の枠の種類に該当してしまわないか（取り違え検出用）
+function whichTypeMatches(name){
+  var hits=[];
+  for(var k in TYPE_RULES){ if(TYPE_RULES[k].test(name)) hits.push(k); }
+  return hits;
+}
+// ファイル名から年月(YYYYMM)を抽出
+function extractNengetsu(name){
+  // 6桁の数字（202604 など）。年は20xx想定
+  var m=name.match(/(20\d{2})(0[1-9]|1[0-2])/);
+  return m?(m[1]+m[2]):null;
+}
+
 function load(key,input){
   var file=input.files[0]; if(!file) return;
-  document.getElementById('fn-'+key).textContent=file.name;
-  document.getElementById('dz-'+key).classList.add('ok');
+  var name=file.name;
+  var dz=document.getElementById('dz-'+key);
+  var fnEl=document.getElementById('fn-'+key);
+
+  // --- 種類チェック ---
+  var rule=TYPE_RULES[key];
+  var matchedThis=rule.test(name);
+  var allHits=whichTypeMatches(name);
+  // この枠の種類に合致しない、または明らかに別の種類のファイル
+  var wrongType=false, wrongMsg='';
+  if(!matchedThis){
+    wrongType=true;
+    // 別のどれかに合致しているなら、その種類名を教える
+    if(allHits.length>0){
+      wrongMsg='「'+rule.label+'」の枠に、別の種類（'+TYPE_RULES[allHits[0]].label+'）のファイルが入っています。';
+    }else{
+      wrongMsg='「'+rule.label+'」の枠には「'+rule.label+'」のファイルを入れてください。ファイル名に「'+rule.label+'」が含まれていません。';
+    }
+  } else if(allHits.length>1 && allHits.indexOf(key)<0){
+    // 念のため：合致するがこの枠ではない場合
+    wrongType=true;
+    wrongMsg='ファイルの種類が枠と一致しません。';
+  }
+
+  if(wrongType){
+    // 受け付けない
+    fd[key]=null; fileMeta[key]=null;
+    dz.classList.remove('ok'); dz.classList.add('ng');
+    fnEl.textContent='✕ '+name;
+    fnEl.style.color='#c0392b';
+    input.value=''; // 同じ操作をやり直せるようにクリア
+    checkReady();
+    showUploadError([wrongMsg]);
+    return;
+  }
+
+  // --- 年月チェック（ファイル名から抽出） ---
+  var nen=extractNengetsu(name);
+  // 読み込み
   var r=new FileReader();
-  r.onload=function(e){ fd[key]=e.target.result; checkReady(); };
+  r.onload=function(e){
+    fd[key]=e.target.result;
+    fileMeta[key]={fname:name, nengetsu:nen};
+    dz.classList.remove('ng'); dz.classList.add('ok');
+    fnEl.textContent=name;
+    fnEl.style.color='';
+    checkReady();
+  };
   r.readAsText(file,'Shift_JIS');
 }
-function checkReady(){
-  document.getElementById('btn-start').disabled=!Object.values(fd).every(function(v){return v!==null;});
+
+function showUploadError(lines){
+  var el=document.getElementById('upload-error');
+  var ok=document.getElementById('upload-okmsg');
+  if(ok) ok.style.display='none';
+  if(!lines||lines.length===0){ el.style.display='none'; el.innerHTML=''; return; }
+  el.innerHTML='⚠️ '+lines.join('<br>⚠️ ');
+  el.style.display='block';
 }
+function showUploadOk(msg){
+  var el=document.getElementById('upload-okmsg');
+  var er=document.getElementById('upload-error');
+  if(er) er.style.display='none';
+  if(!msg){ el.style.display='none'; return; }
+  el.textContent='✓ '+msg;
+  el.style.display='block';
+}
+
+function checkReady(){
+  var btn=document.getElementById('btn-start');
+  var loaded=Object.keys(fd).filter(function(k){return fd[k]!==null;});
+  // まだ全部揃っていない
+  if(loaded.length<4){
+    btn.disabled=true;
+    // 月の不一致が既にあれば警告（揃った分だけ）
+    var months0=loaded.map(function(k){return fileMeta[k]&&fileMeta[k].nengetsu;}).filter(function(v){return v;});
+    var uniq0=months0.filter(function(v,i,a){return a.indexOf(v)===i;});
+    if(uniq0.length>1){
+      showUploadError(['月が一致しないファイルが混ざっています（'+uniq0.map(fmtNen).join(' と ')+'）。同じ月の4ファイルを入れてください。']);
+    }
+    return;
+  }
+  // 4つ揃った → 月の一致を確認
+  var months=Object.keys(fd).map(function(k){return fileMeta[k]?fileMeta[k].nengetsu:null;});
+  var missing=Object.keys(fd).filter(function(k){return !fileMeta[k]||!fileMeta[k].nengetsu;});
+  if(missing.length>0){
+    btn.disabled=true;
+    showUploadError(['ファイル名から年月（YYYYMM）を読み取れないファイルがあります。ファイル名に「202604」のような年月が入っているか確認してください。']);
+    return;
+  }
+  var uniq=months.filter(function(v,i,a){return a.indexOf(v)===i;});
+  if(uniq.length>1){
+    btn.disabled=true;
+    showUploadError(['月が一致していません（'+uniq.map(fmtNen).join(' と ')+'）。すべて同じ月の4ファイルを入れてください。']);
+    return;
+  }
+  // すべてOK
+  btn.disabled=false;
+  showUploadOk(fmtNen(uniq[0])+' の4ファイルが揃いました。ダッシュボードを表示できます。');
+}
+function fmtNen(n){ if(!n) return '?'; return n.slice(0,4)+'年'+parseInt(n.slice(4,6))+'月'; }
 function backToUpload(){
   document.getElementById('dashboard').style.display='none';
   document.getElementById('upload-screen').style.display='flex';
@@ -526,6 +644,17 @@ async function loadHiddenStaff(){
 
 // ========== BUILD DASHBOARD ==========
 async function buildDashboard(){
+  // 最終ガード：4種類が正しく揃い、月が一致しているか再確認
+  var keys=['u','m','y','s'];
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];
+    if(!fd[k]||!fileMeta[k]){ showUploadError(['「'+TYPE_RULES[k].label+'」が読み込まれていません。4種類すべてを正しく入れてください。']); return; }
+    if(!TYPE_RULES[k].test(fileMeta[k].fname)){ showUploadError(['「'+TYPE_RULES[k].label+'」の枠に違う種類のファイルが入っています。']); return; }
+  }
+  var mons=keys.map(function(k){return fileMeta[k].nengetsu;});
+  var uniqM=mons.filter(function(v,i,a){return a.indexOf(v)===i;});
+  if(uniqM.length!==1||!uniqM[0]){ showUploadError(['月が一致していません。すべて同じ月の4ファイルを入れてください。']); return; }
+
   rawUriageText=fd.u;
   window._cachedNonStore=null;
   await loadHiddenStaff();
