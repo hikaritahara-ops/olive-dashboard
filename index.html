@@ -184,7 +184,6 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
   <div id="total-panel" style="display:none;padding:24px;">
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
       <button id="ttab-summary" onclick="switchTotalTab('summary')" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#059669,#3b7de8);color:#fff;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 全店舗サマリー</button>
-      <button id="ttab-area" onclick="switchTotalTab('area')" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">🗺 エリア別比較</button>
       <button id="ttab-shimei" onclick="switchTotalTab('shimei')" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">🏆 全店舗指名ランキング</button>
       <button id="ttab-time" onclick="switchTotalTab('time')" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">⏱ 全店舗施術時間ランキング</button>
     </div>
@@ -199,7 +198,7 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
     <div class="section-title">店舗別詳細一覧</div>
     <div style="overflow-x:auto;">
       <table class="store-table" id="total-table">
-        <thead><tr><th style="text-align:left;white-space:nowrap;" id="th-name">店舗名 <button onclick="sortTotal('name')" id="btn-sort-name" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-uriage">売上 <button onclick="sortTotal('uriage')" id="btn-sort-uriage" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-mokuhyo">売上目標 <button onclick="sortTotal('mokuhyo')" id="btn-sort-mokuhyo" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-tasseiritsu">達成率 <button onclick="sortTotal('tasseiritsu')" id="btn-sort-tasseiritsu" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-kyakuTanka">客単価 <button onclick="sortTotal('kyakuTanka')" id="btn-sort-kyakuTanka" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-sokyaku">総客数 <button onclick="sortTotal('sokyaku')" id="btn-sort-sokyaku" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-total">施術 <button onclick="sortTotal('total')" id="btn-sort-total" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-okotowari">お断り <button onclick="sortTotal('okotowari')" id="btn-sort-okotowari" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-shinki">新規 <button onclick="sortTotal('shinki')" id="btn-sort-shinki" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-kaiin">既存 <button onclick="sortTotal('kaiin')" id="btn-sort-kaiin" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-aromaKin">アロマ <button onclick="sortTotal('aromaKin')" id="btn-sort-aromaKin" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-hiristKin">ヒリスト <button onclick="sortTotal('hiristKin')" id="btn-sort-hiristKin" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-dryKin">ドライ <button onclick="sortTotal('dryKin')" id="btn-sort-dryKin" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-magmaKin">マグマ <button onclick="sortTotal('magmaKin')" id="btn-sort-magmaKin" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-genkin">現金 <button onclick="sortTotal('genkin')" id="btn-sort-genkin" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th><th style="white-space:nowrap;" id="th-card">カード <button onclick="sortTotal('card')" id="btn-sort-card" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text2);padding:0 2px;">↕</button></th></tr></thead>
+        <thead><tr><th style="text-align:left;white-space:nowrap;" id="th-name">店舗名</th><th style="white-space:nowrap;" id="th-uriage">売上</th><th style="white-space:nowrap;" id="th-mokuhyo">売上目標</th><th style="white-space:nowrap;" id="th-tasseiritsu">達成率</th><th style="white-space:nowrap;" id="th-kyakuTanka">客単価</th><th style="white-space:nowrap;" id="th-sokyaku">総客数</th><th style="white-space:nowrap;" id="th-total">施術</th><th style="white-space:nowrap;" id="th-okotowari">お断り</th><th style="white-space:nowrap;" id="th-shinki">新規</th><th style="white-space:nowrap;" id="th-kaiin">既存</th><th style="white-space:nowrap;" id="th-aromaKin">アロマ</th><th style="white-space:nowrap;" id="th-hiristKin">ヒリスト</th><th style="white-space:nowrap;" id="th-dryKin">ドライ</th><th style="white-space:nowrap;" id="th-magmaKin">マグマ</th><th style="white-space:nowrap;" id="th-genkin">現金</th><th style="white-space:nowrap;" id="th-card">カード</th></tr></thead>
         <tbody id="total-tbody"></tbody>
         <tfoot id="total-tfoot" style="font-weight:700;background:linear-gradient(135deg,#f0f4ff,#f5f0ff);"></tfoot>
       </table>
@@ -226,15 +225,6 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
         </tr></thead>
         <tbody id="total-time-tbody"></tbody>
       </table></div>
-    </div>
-    <div id="ttab-content-area" style="display:none;">
-      <div class="section-title">エリア別比較 <span style="font-weight:400;color:var(--text3);font-size:11px;">— エリアマネージャー別</span></div>
-      <div id="area-charts" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-        <div class="chart-card"><div class="chart-title">エリア別 売上 vs 目標</div><div class="chart-wrap"><canvas id="chart-area-uriage"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">エリア別 メニュー構成</div><div class="chart-wrap"><canvas id="chart-area-menu"></canvas></div></div>
-      </div>
-      <div id="area-feedback" style="margin-bottom:20px;"></div>
-      <div id="area-compare" style="margin-bottom:8px;"></div>
     </div>
   </div>
   <div id="trend-panel" style="display:none;padding:24px;">
@@ -1028,51 +1018,21 @@ function sortTotal(key){
 }
 
 function renderTotalTable(){
-  var list=Object.values(stores).filter(function(s){return s.uriage>0;});
-  list.sort(function(a,b){
-    var av,bv;
-    if(totalSortKey==='sokyaku'){ av=(a.total||0)+(a.okotowari||0); bv=(b.total||0)+(b.okotowari||0); }
-    else { av=a[totalSortKey]||0; bv=b[totalSortKey]||0; }
-    if(totalSortKey==='name') return totalSortAsc?String(a.name).localeCompare(String(b.name)):String(b.name).localeCompare(String(a.name));
-    return totalSortAsc?av-bv:bv-av;
-  });
-  var sum={uriage:0,mokuhyo:0,total:0,shinki:0,kaiin:0,okotowari:0,
-    aromaKin:0,hiristKin:0,dryKin:0,magmaKin:0,genkin:0,card:0,totalM:0,totalF:0};
-  list.forEach(function(s){for(var k in sum) sum[k]+=(s[k]||0);});
-  var avgT=list.reduce(function(a,s){return a+s.tasseiritsu;},0)/list.length;
-  var kyakuTanka=sum.total>0?Math.round(sum.uriage/sum.total):0;
-  // 全店舗合計の達成率は「合計売上 ÷ 合計目標」で算出（目標があるときのみ）
-  var totalTassei=sum.mokuhyo>0?Math.round(sum.uriage/sum.mokuhyo*1000)/10:0;
+  var allList=Object.values(stores).filter(function(s){return s.uriage>0;});
 
-  // 先頭に置く「全店舗合計」行
-  var totalRowCls=totalTassei>=100?'pct-pos':totalTassei>=90?'pct-warn':'pct-neg';
-  var totalRow='<tr style="font-weight:700;background:linear-gradient(135deg,#eef3ff,#f3eeff);border-bottom:2px solid var(--border);">'
-    +'<td>🏢 全店舗合計（'+list.length+'店舗）</td>'
-    +'<td>¥'+fmt(sum.uriage)+'</td>'
-    +'<td>'+(sum.mokuhyo>0?'¥'+fmt(sum.mokuhyo):'－')+'</td>'
-    +'<td class="'+(sum.mokuhyo>0?totalRowCls:'pct-neu')+'">'+(sum.mokuhyo>0?totalTassei.toFixed(1)+'%':'－')+'</td>'
-    +'<td>¥'+fmt(kyakuTanka)+'</td>'
-    +'<td>'+fmt(sum.total+sum.okotowari)+'</td>'
-    +'<td>'+fmt(sum.total)+'</td>'
-    +'<td>'+fmt(sum.okotowari)+'</td>'
-    +'<td>'+fmt(sum.shinki)+'</td>'
-    +'<td>'+fmt(sum.kaiin)+'</td>'
-    +'<td>¥'+fmt(sum.aromaKin)+'</td>'
-    +'<td>¥'+fmt(sum.hiristKin)+'</td>'
-    +'<td>¥'+fmt(sum.dryKin)+'</td>'
-    +'<td>¥'+fmt(sum.magmaKin)+'</td>'
-    +'<td>¥'+fmt(sum.genkin)+'</td>'
-    +'<td>¥'+fmt(sum.card)+'</td>'
-    +'</tr>';
+  // 数値フィールド一覧
+  var FIELDS=['uriage','mokuhyo','total','shinki','kaiin','okotowari','aromaKin','hiristKin','dryKin','magmaKin','genkin','card','totalM','totalF'];
+  function blankSum(){var o={};FIELDS.forEach(function(k){o[k]=0;});return o;}
+  function addTo(sum,s){FIELDS.forEach(function(k){sum[k]+=(s[k]||0);});}
 
-  var rows=list.map(function(s,i){
+  // 店舗1行のセル（達成率の色分けあり）
+  function storeCells(s){
     var tCls=s.tasseiritsu>=100?'pct-pos':s.tasseiritsu>=90?'pct-warn':'pct-neg';
-    return '<tr>'
-      +'<td>'+(i+1)+'. '+s.name+'</td>'
-      +'<td>¥'+fmt(s.uriage)+'</td>'
+    var tanka=s.total>0?Math.round(s.uriage/s.total):(s.kyakuTanka||0);
+    return '<td>¥'+fmt(s.uriage)+'</td>'
       +'<td>'+(s.mokuhyo>0?'¥'+fmt(s.mokuhyo):'－')+'</td>'
       +'<td class="'+tCls+'">'+fmtPct(s.tasseiritsu)+'</td>'
-      +'<td>¥'+fmt(s.kyakuTanka)+'</td>'
+      +'<td>¥'+fmt(tanka)+'</td>'
       +'<td>'+fmt((s.total||0)+(s.okotowari||0))+'</td>'
       +'<td>'+fmt(s.total)+'</td>'
       +'<td>'+(s.okotowari||0)+'</td>'
@@ -1083,38 +1043,79 @@ function renderTotalTable(){
       +'<td>¥'+fmt(s.dryKin)+'</td>'
       +'<td>¥'+fmt(s.magmaKin)+'</td>'
       +'<td>¥'+fmt(s.genkin)+'</td>'
-      +'<td>¥'+fmt(s.card)+'</td>'
-      +'</tr>';
-  }).join('');
+      +'<td>¥'+fmt(s.card)+'</td>';
+  }
+  // 合計行のセル（達成率＝合計売上÷合計目標）
+  function sumCells(sum){
+    var tanka=sum.total>0?Math.round(sum.uriage/sum.total):0;
+    var tassei=sum.mokuhyo>0?Math.round(sum.uriage/sum.mokuhyo*1000)/10:0;
+    var tCls=tassei>=100?'pct-pos':tassei>=90?'pct-warn':'pct-neg';
+    return '<td>¥'+fmt(sum.uriage)+'</td>'
+      +'<td>'+(sum.mokuhyo>0?'¥'+fmt(sum.mokuhyo):'－')+'</td>'
+      +'<td class="'+(sum.mokuhyo>0?tCls:'pct-neu')+'">'+(sum.mokuhyo>0?tassei.toFixed(1)+'%':'－')+'</td>'
+      +'<td>¥'+fmt(tanka)+'</td>'
+      +'<td>'+fmt(sum.total+sum.okotowari)+'</td>'
+      +'<td>'+fmt(sum.total)+'</td>'
+      +'<td>'+fmt(sum.okotowari)+'</td>'
+      +'<td>'+fmt(sum.shinki)+'</td>'
+      +'<td>'+fmt(sum.kaiin)+'</td>'
+      +'<td>¥'+fmt(sum.aromaKin)+'</td>'
+      +'<td>¥'+fmt(sum.hiristKin)+'</td>'
+      +'<td>¥'+fmt(sum.dryKin)+'</td>'
+      +'<td>¥'+fmt(sum.magmaKin)+'</td>'
+      +'<td>¥'+fmt(sum.genkin)+'</td>'
+      +'<td>¥'+fmt(sum.card)+'</td>';
+  }
 
-  document.getElementById('total-tbody').innerHTML=totalRow+rows;
+  // --- 全店舗合計（先頭） ---
+  var grand=blankSum();
+  allList.forEach(function(s){addTo(grand,s);});
+  var html='<tr style="font-weight:700;background:linear-gradient(135deg,#eef3ff,#f3eeff);border-bottom:2px solid var(--border);">'
+    +'<td>🏢 全店舗合計（'+allList.length+'店舗）</td>'+sumCells(grand)+'</tr>';
 
-  document.getElementById('total-tfoot').innerHTML='<tr>'
-    +'<td>合計 / 平均</td>'
-    +'<td>¥'+fmt(sum.uriage)+'</td>'
-    +'<td>'+(sum.mokuhyo>0?'¥'+fmt(sum.mokuhyo):'－')+'</td>'
-    +'<td class="pct-neu">'+avgT.toFixed(1)+'%</td>'
-    +'<td>¥'+fmt(kyakuTanka)+'</td>'
-    +'<td>'+fmt(sum.total+sum.okotowari)+'</td>'
-    +'<td>'+fmt(sum.total)+'</td>'
-    +'<td>'+fmt(sum.okotowari)+'</td>'
-    +'<td>'+fmt(sum.shinki)+'</td>'
-    +'<td>'+fmt(sum.kaiin)+'</td>'
-    +'<td>¥'+fmt(sum.aromaKin)+'</td>'
-    +'<td>¥'+fmt(sum.hiristKin)+'</td>'
-    +'<td>¥'+fmt(sum.dryKin)+'</td>'
-    +'<td>¥'+fmt(sum.magmaKin)+'</td>'
-    +'<td>¥'+fmt(sum.genkin)+'</td>'
-    +'<td>¥'+fmt(sum.card)+'</td>'
-    +'</tr>';
+  // --- エリアごとに、指定順で店舗を並べ、最後にエリア合計 ---
+  var usedNames={};
+  // 指定スロット（キーワードAND）で、まだ使っていない店舗を1つ返す。
+  // 「恵比寿」スロットは DH を含む店を避ける（DH恵比寿と区別）
+  function pickStore(kws){
+    var cand=allList.filter(function(s){
+      if(usedNames[s.name]) return false;
+      if(!kws.every(function(kw){return s.name.indexOf(kw)>=0;})) return false;
+      // 「恵比寿」単独指定のときは DH を含む店を除外（DH恵比寿は別スロット）
+      if(kws.length===1 && kws[0]==='恵比寿' && s.name.indexOf('DH')>=0) return false;
+      return true;
+    });
+    if(cand.length===0) return null;
+    usedNames[cand[0].name]=true;
+    return cand[0];
+  }
+
+  AREA_DEFS.forEach(function(def){
+    var areaSum=blankSum();
+    var areaCount=0;
+    def.stores.forEach(function(kws){
+      var s=pickStore(kws);
+      if(!s) return; // その月にデータが無い店舗（休業など）はスキップ
+      areaCount++;
+      addTo(areaSum,s);
+      html+='<tr><td>'+s.name+'</td>'+storeCells(s)+'</tr>';
+    });
+    // エリア合計行
+    html+='<tr style="font-weight:700;background:'+(def.manager==='井波'?'#eaf2fe':'#f1ecfe')+';border-top:2px solid '+def.color+';">'
+      +'<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+def.color+';margin-right:6px;"></span>'+def.manager+'エリア合計（'+areaCount+'店舗）</td>'
+      +sumCells(areaSum)+'</tr>';
+  });
+
+  document.getElementById('total-tbody').innerHTML=html;
+  document.getElementById('total-tfoot').innerHTML='';
 }
 
 // ========== エリア別比較 ==========
 // エリアマネージャー定義。各店舗はキーワードの全一致(AND)で判定（表記ゆれ対策）
 var AREA_DEFS=[
   {manager:'井波', color:'#3b7de8', stores:[
-    ['PANTHEON','赤坂'],['白金プラチナ'],['恵比寿'],['横浜元町中華街'],
-    ['PENT','堀江'],['西梅田'],['名古屋'],['DH','恵比寿'],['PANTHEON','西麻布']
+    ['PANTHEON','赤坂'],['白金プラチナ'],['恵比寿'],['PANTHEON','西麻布'],['横浜元町中華街'],
+    ['PENT','堀江'],['西梅田'],['名古屋'],['DH','恵比寿']
   ]},
   {manager:'安田', color:'#7c5cfc', stores:[
     ['銀座並木通り'],['PENT','西麻布'],['PANTHEON','新宿'],['PENT','代官山'],
@@ -1741,11 +1742,10 @@ function renderStoreTrend(){
 }
 
 function switchTotalTab(tab){
-  var tabs=['summary','shimei','time','area'];
+  var tabs=['summary','shimei','time'];
   var colors={summary:'linear-gradient(135deg,#059669,#3b7de8)',
     shimei:'linear-gradient(135deg,var(--accent),var(--accent2))',
-    time:'linear-gradient(135deg,var(--accent3),var(--accent))',
-    area:'linear-gradient(135deg,#3b7de8,#7c5cfc)'};
+    time:'linear-gradient(135deg,var(--accent3),var(--accent))'};
   tabs.forEach(function(t){
     var el=document.getElementById('ttab-content-'+t);
     var btn=document.getElementById('ttab-'+t);
@@ -1758,7 +1758,6 @@ function switchTotalTab(tab){
   if(btn){btn.style.background=colors[tab];btn.style.color='#fff';btn.style.border='none';}
   if(tab==='shimei') renderTotalShimei();
   if(tab==='time') renderTotalTime();
-  if(tab==='area') renderAreaTab();
 }
 
 function getAllVisibleStaff(){
