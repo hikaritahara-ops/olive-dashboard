@@ -184,6 +184,7 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
   <div id="total-panel" style="display:none;padding:24px;">
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
       <button id="ttab-summary" onclick="switchTotalTab('summary')" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#059669,#3b7de8);color:#fff;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 全店舗サマリー</button>
+      <button id="ttab-area" onclick="switchTotalTab('area')" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">🗺 エリア別比較</button>
       <button id="ttab-shimei" onclick="switchTotalTab('shimei')" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">🏆 全店舗指名ランキング</button>
       <button id="ttab-time" onclick="switchTotalTab('time')" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">⏱ 全店舗施術時間ランキング</button>
     </div>
@@ -205,7 +206,7 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
     </div>
     </div><!-- end ttab-content-summary -->
     <div id="ttab-content-shimei" style="display:none;">
-      <div class="section-title">全店舗 指名ランキング <span style="font-weight:400;color:var(--text3);font-size:10px;">— 表示中スタッフのみ</span></div>
+      <div class="section-title">全店舗 指名ランキング <span style="font-weight:400;color:var(--text3);font-size:10px;">— 表示中スタッフのみ</span><button id="btn-shimei-rank-sort" onclick="toggleShimeiRank()" style="margin-left:12px;padding:5px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:12px;cursor:pointer;font-weight:500;vertical-align:middle;">⬇ 高い順</button></div>
       <div style="overflow-x:auto;"><table class="store-table">
         <thead><tr>
           <th style="text-align:left">スタッフ名</th>
@@ -216,7 +217,7 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
       </table></div>
     </div>
     <div id="ttab-content-time" style="display:none;">
-      <div class="section-title">全店舗 施術時間ランキング <span style="font-weight:400;color:var(--text3);font-size:10px;">— 表示中スタッフのみ</span></div>
+      <div class="section-title">全店舗 施術時間ランキング <span style="font-weight:400;color:var(--text3);font-size:10px;">— 表示中スタッフのみ</span><button id="btn-time-rank-sort" onclick="toggleTimeRank()" style="margin-left:12px;padding:5px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'Noto Sans JP',sans-serif;font-size:12px;cursor:pointer;font-weight:500;vertical-align:middle;">⬇ 高い順</button></div>
       <div style="overflow-x:auto;"><table class="store-table">
         <thead><tr>
           <th style="text-align:left">スタッフ名</th>
@@ -225,6 +226,15 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
         </tr></thead>
         <tbody id="total-time-tbody"></tbody>
       </table></div>
+    </div>
+    <div id="ttab-content-area" style="display:none;">
+      <div class="section-title">エリア別比較 <span style="font-weight:400;color:var(--text3);font-size:11px;">— エリアマネージャー別</span></div>
+      <div id="area-charts" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="chart-card"><div class="chart-title">エリア別 売上 vs 目標</div><div class="chart-wrap"><canvas id="chart-area-uriage"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">エリア別 メニュー構成</div><div class="chart-wrap"><canvas id="chart-area-menu"></canvas></div></div>
+      </div>
+      <div id="area-feedback" style="margin-bottom:20px;"></div>
+      <div id="area-compare" style="margin-bottom:8px;"></div>
     </div>
   </div>
   <div id="trend-panel" style="display:none;padding:24px;">
@@ -1099,6 +1109,193 @@ function renderTotalTable(){
     +'</tr>';
 }
 
+// ========== エリア別比較 ==========
+// エリアマネージャー定義。各店舗はキーワードの全一致(AND)で判定（表記ゆれ対策）
+var AREA_DEFS=[
+  {manager:'井波', color:'#3b7de8', stores:[
+    ['PANTHEON','赤坂'],['白金プラチナ'],['恵比寿'],['横浜元町中華街'],
+    ['PENT','堀江'],['西梅田'],['名古屋'],['DH','恵比寿'],['PANTHEON','西麻布']
+  ]},
+  {manager:'安田', color:'#7c5cfc', stores:[
+    ['銀座並木通り'],['PENT','西麻布'],['PANTHEON','新宿'],['PENT','代官山'],
+    ['三宿'],['心斎橋'],['京都祇園'],['西中洲'],['銀座店']
+  ]}
+];
+// 店舗名がキーワード群(AND)に一致するか
+function _matchStore(name, kws){
+  return kws.every(function(kw){ return name.indexOf(kw)>=0; });
+}
+// 店舗名がどのエリアに属するか（最初に一致したエリアmanager名を返す。無ければnull）
+function areaOf(storeName){
+  for(var i=0;i<AREA_DEFS.length;i++){
+    var def=AREA_DEFS[i];
+    for(var j=0;j<def.stores.length;j++){
+      if(_matchStore(storeName, def.stores[j])) return def.manager;
+    }
+  }
+  return null;
+}
+
+// エリアごとの集計を返す（カード・グラフ・講評で共通利用）
+function computeAreaBuckets(){
+  var areaData={};
+  AREA_DEFS.forEach(function(d){ areaData[d.manager]={manager:d.manager,color:d.color,
+    uriage:0,mokuhyo:0,total:0,okotowari:0,shinki:0,kaiin:0,
+    aromaKin:0,hiristKin:0,dryKin:0,magmaKin:0,otherKin:0,genkin:0,card:0,prepaid:0,totalM:0,totalF:0,
+    storeCount:0,_tasseiList:[]}; });
+  var other={manager:'その他',color:'#9ca3af',uriage:0,mokuhyo:0,total:0,okotowari:0,shinki:0,kaiin:0,
+    aromaKin:0,hiristKin:0,dryKin:0,magmaKin:0,otherKin:0,genkin:0,card:0,prepaid:0,totalM:0,totalF:0,storeCount:0,_tasseiList:[]};
+  var hasOther=false;
+  Object.values(stores).forEach(function(s){
+    if(!s.uriage||s.uriage<=0) return;
+    var mgr=areaOf(s.name);
+    var bucket = mgr?areaData[mgr]:other;
+    if(!mgr) hasOther=true;
+    ['uriage','mokuhyo','total','okotowari','shinki','kaiin','aromaKin','hiristKin','dryKin','magmaKin','otherKin','genkin','card','prepaid','totalM','totalF'].forEach(function(k){
+      bucket[k]+=(s[k]||0);
+    });
+    bucket.storeCount++;
+    bucket._tasseiList.push(s.tasseiritsu||0);
+  });
+  var buckets=AREA_DEFS.map(function(d){return areaData[d.manager];});
+  if(hasOther) buckets.push(other);
+  buckets.forEach(function(b){
+    b.tanka=b.total>0?Math.round(b.uriage/b.total):0;
+    b.tassei=b.mokuhyo>0?Math.round(b.uriage/b.mokuhyo*1000)/10:0;
+    b.sokyaku=b.total+b.okotowari;
+    b.okRate=b.sokyaku>0?Math.round(b.okotowari/b.sokyaku*1000)/10:0;
+    b.shinkiRate=b.total>0?Math.round(b.shinki/b.total*1000)/10:0;
+  });
+  return buckets;
+}
+
+function renderAreaTab(){
+  var buckets=computeAreaBuckets();
+  renderAreaCompare(buckets);
+  renderAreaCharts(buckets);
+  renderAreaFeedback(buckets);
+}
+
+var areaChartInstances={};
+function renderAreaCharts(buckets){
+  Object.values(areaChartInstances).forEach(function(c){try{c.destroy();}catch(e){}});
+  areaChartInstances={};
+  var labels=buckets.map(function(b){return b.manager;});
+  areaChartInstances.uriage=new Chart(document.getElementById('chart-area-uriage'),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'売上',data:buckets.map(function(b){return Math.round(b.uriage/10000);}),backgroundColor:'#3b7de8'},
+      {label:'目標',data:buckets.map(function(b){return Math.round(b.mokuhyo/10000);}),backgroundColor:'#cbd5e1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{color:'#6b7280',font:{size:11}}},
+        tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': ¥'+Number(ctx.raw).toLocaleString()+'万';}}}},
+      scales:{y:{ticks:{color:'#9ca3af',callback:function(v){return '¥'+v.toLocaleString()+'万';}}},x:{ticks:{color:'#6b7280',font:{size:12}}}}}
+  });
+  areaChartInstances.menu=new Chart(document.getElementById('chart-area-menu'),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'アロマ',data:buckets.map(function(b){return Math.round(b.aromaKin/10000);}),backgroundColor:'#3b7de8'},
+      {label:'ヒリスト',data:buckets.map(function(b){return Math.round(b.hiristKin/10000);}),backgroundColor:'#7c5cfc'},
+      {label:'ドライ',data:buckets.map(function(b){return Math.round(b.dryKin/10000);}),backgroundColor:'#34d399'},
+      {label:'マグマ',data:buckets.map(function(b){return Math.round(b.magmaKin/10000);}),backgroundColor:'#fbbf24'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{color:'#6b7280',font:{size:11}}},
+        tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': ¥'+Number(ctx.raw).toLocaleString()+'万';}}}},
+      scales:{x:{stacked:true,ticks:{color:'#6b7280',font:{size:12}}},y:{stacked:true,ticks:{color:'#9ca3af',callback:function(v){return '¥'+v.toLocaleString()+'万';}}}}}
+  });
+}
+
+function renderAreaFeedback(buckets){
+  var el=document.getElementById('area-feedback');
+  if(!el) return;
+  var areas=buckets.filter(function(b){return b.manager!=='その他';});
+  if(areas.length<1){ el.innerHTML=''; return; }
+  var avgTanka=areas.reduce(function(a,b){return a+b.tanka;},0)/areas.length;
+  var avgOkRate=areas.reduce(function(a,b){return a+b.okRate;},0)/areas.length;
+  var avgShinkiRate=areas.reduce(function(a,b){return a+b.shinkiRate;},0)/areas.length;
+
+  var cards=areas.map(function(b){
+    var pts=[];
+    if(b.mokuhyo>0){
+      if(b.tassei>=105) pts.push({sev:'good',text:'目標達成率'+b.tassei.toFixed(1)+'%。目標を大きく上回り好調。'});
+      else if(b.tassei>=100) pts.push({sev:'good',text:'目標達成率'+b.tassei.toFixed(1)+'%。目標はクリアだが余力は薄い。'});
+      else if(b.tassei>=95) pts.push({sev:'warn',text:'目標達成率'+b.tassei.toFixed(1)+'%。あと一歩で未達。要テコ入れ。'});
+      else pts.push({sev:'bad',text:'⚠️ 目標未達（'+b.tassei.toFixed(1)+'%）。目標まで¥'+fmt(b.mokuhyo-b.uriage)+'不足。早急な対策が必要。'});
+    }
+    if(b.okRate>=avgOkRate+3) pts.push({sev:'bad',text:'⚠️ お断り率'+b.okRate.toFixed(1)+'%は全エリア平均（'+avgOkRate.toFixed(1)+'%）を大きく超過。機会損失が深刻。人員・予約枠の見直しを。'});
+    else if(b.okRate>=avgOkRate) pts.push({sev:'warn',text:'お断り率'+b.okRate.toFixed(1)+'%が平均より高め。取りこぼしを減らせば売上上振れの余地。'});
+    else pts.push({sev:'good',text:'お断り率'+b.okRate.toFixed(1)+'%は平均以下。予約をうまく捌けている。'});
+    if(b.tanka>=avgTanka*1.05) pts.push({sev:'good',text:'客単価¥'+fmt(b.tanka)+'は高水準。高単価メニューが効いている。'});
+    else if(b.tanka<avgTanka*0.95) pts.push({sev:'warn',text:'客単価¥'+fmt(b.tanka)+'が平均（¥'+fmt(Math.round(avgTanka))+'）より低い。アップセル・メニュー構成に改善余地。'});
+    if(b.shinkiRate<avgShinkiRate-3) pts.push({sev:'warn',text:'新規比率'+b.shinkiRate.toFixed(1)+'%が低い。既存依存。新規集客の強化を。'});
+    else if(b.shinkiRate>=avgShinkiRate+3) pts.push({sev:'good',text:'新規比率'+b.shinkiRate.toFixed(1)+'%が高い。集客力は強い。リピート化が次の課題。'});
+    var menuTotal=b.aromaKin+b.hiristKin+b.dryKin+b.magmaKin;
+    if(menuTotal>0){
+      var aromaShare=Math.round(b.aromaKin/menuTotal*1000)/10;
+      if(aromaShare>=70) pts.push({sev:'warn',text:'売上のアロマ依存度が'+aromaShare.toFixed(0)+'%と高い。他メニューの底上げでリスク分散を。'});
+    }
+    var rows=pts.map(function(p){
+      var col=p.sev==='good'?'#1f7a3a':p.sev==='warn'?'#b45309':'#c0392b';
+      var bg=p.sev==='good'?'#e9f8ee':p.sev==='warn'?'#fef6e7':'#fdecec';
+      var icon=p.sev==='good'?'✓':p.sev==='warn'?'△':'✕';
+      return '<div style="display:flex;gap:8px;padding:8px 12px;background:'+bg+';border-radius:8px;margin-bottom:6px;"><span style="color:'+col+';font-weight:700;flex-shrink:0;">'+icon+'</span><span style="color:'+col+';font-size:12.5px;line-height:1.6;">'+p.text+'</span></div>';
+    }).join('');
+    return '<div style="flex:1;min-width:300px;background:var(--surface);border:1px solid var(--border);border-top:4px solid '+b.color+';border-radius:14px;padding:16px 18px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="width:10px;height:10px;border-radius:50%;background:'+b.color+';display:inline-block;"></span><span style="font-size:14px;font-weight:700;">'+b.manager+' エリア 講評</span></div>'
+      +rows+'</div>';
+  }).join('');
+
+  var head='';
+  if(areas.length===2){
+    var a=areas[0],c=areas[1];
+    var winner=a.tassei>c.tassei?a:c, loser=a.tassei>c.tassei?c:a;
+    var diff=Math.abs(a.tassei-c.tassei).toFixed(1);
+    head='<div style="padding:12px 16px;background:linear-gradient(135deg,#eef3ff,#f3eeff);border-radius:12px;margin-bottom:14px;font-size:13px;line-height:1.7;">'
+      +'<b>総評：</b>達成率では<b>'+winner.manager+'エリア</b>（'+winner.tassei.toFixed(1)+'%）が<b>'+loser.manager+'エリア</b>（'+loser.tassei.toFixed(1)+'%）を'+diff+'ポイント上回る。'
+      +(loser.tassei<100?loser.manager+'エリアは目標未達であり、立て直しが急務。':'両エリアとも目標は達成。さらなる上積みを狙いたい。')
+      +'</div>';
+  }
+  el.innerHTML=head+'<div style="display:flex;gap:16px;flex-wrap:wrap;">'+cards+'</div>';
+}
+
+function renderAreaCompare(buckets){
+  var el=document.getElementById('area-compare');
+  if(!el) return;
+  if(!buckets) buckets=computeAreaBuckets();
+
+  // カード形式で2エリア並べる
+  var cards=buckets.map(function(b){
+    var tanka=b.total>0?Math.round(b.uriage/b.total):0;
+    var tassei=b.mokuhyo>0?Math.round(b.uriage/b.mokuhyo*1000)/10:0;
+    var sokyaku=b.total+b.okotowari;
+    var tCls=tassei>=100?'pct-pos':tassei>=90?'pct-warn':'pct-neg';
+    function row(label,val){return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text2);font-size:12px;">'+label+'</span><span style="font-weight:600;font-size:13px;">'+val+'</span></div>';}
+    return '<div style="flex:1;min-width:280px;background:var(--surface);border:1px solid var(--border);border-top:4px solid '+b.color+';border-radius:14px;padding:18px 20px;box-shadow:0 4px 14px rgba(0,0,0,.05);">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span style="width:10px;height:10px;border-radius:50%;background:'+b.color+';display:inline-block;"></span>'
+      +'<span style="font-size:15px;font-weight:700;">'+b.manager+(b.manager==='その他'?'':' エリアマネージャー')+'</span>'
+      +'<span style="margin-left:auto;font-size:11px;color:var(--text3);">'+b.storeCount+'店舗</span></div>'
+      +row('売上', '¥'+fmt(b.uriage))
+      +row('売上目標', b.mokuhyo>0?'¥'+fmt(b.mokuhyo):'－')
+      +'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text2);font-size:12px;">達成率</span><span class="'+tCls+'" style="font-weight:700;font-size:14px;">'+(b.mokuhyo>0?tassei.toFixed(1)+'%':'－')+'</span></div>'
+      +row('客単価', '¥'+fmt(tanka))
+      +row('総客数', fmt(sokyaku)+'人')
+      +row('施術', fmt(b.total)+'人')
+      +row('お断り', fmt(b.okotowari)+'件')
+      +row('新規', fmt(b.shinki)+'人')
+      +row('既存', fmt(b.kaiin)+'人')
+      +row('男性 / 女性', fmt(b.totalM)+' / '+fmt(b.totalF)+'人')
+      +row('アロマ売上', '¥'+fmt(b.aromaKin))
+      +row('ヒリスト売上', '¥'+fmt(b.hiristKin))
+      +row('ドライ売上', '¥'+fmt(b.dryKin))
+      +'<div style="display:flex;justify-content:space-between;padding:7px 0;"><span style="color:var(--text2);font-size:12px;">マグマ売上</span><span style="font-weight:600;font-size:13px;">¥'+fmt(b.magmaKin)+'</span></div>'
+      +'</div>';
+  }).join('');
+
+  el.innerHTML='<div style="display:flex;gap:16px;flex-wrap:wrap;">'+cards+'</div>';
+}
+
 function renderTotal(){
   var list=Object.values(stores).filter(function(s){return s.uriage>0;});
   if(list.length===0) return;
@@ -1544,10 +1741,11 @@ function renderStoreTrend(){
 }
 
 function switchTotalTab(tab){
-  var tabs=['summary','shimei','time'];
+  var tabs=['summary','shimei','time','area'];
   var colors={summary:'linear-gradient(135deg,#059669,#3b7de8)',
     shimei:'linear-gradient(135deg,var(--accent),var(--accent2))',
-    time:'linear-gradient(135deg,var(--accent3),var(--accent))'};
+    time:'linear-gradient(135deg,var(--accent3),var(--accent))',
+    area:'linear-gradient(135deg,#3b7de8,#7c5cfc)'};
   tabs.forEach(function(t){
     var el=document.getElementById('ttab-content-'+t);
     var btn=document.getElementById('ttab-'+t);
@@ -1560,6 +1758,7 @@ function switchTotalTab(tab){
   if(btn){btn.style.background=colors[tab];btn.style.color='#fff';btn.style.border='none';}
   if(tab==='shimei') renderTotalShimei();
   if(tab==='time') renderTotalTime();
+  if(tab==='area') renderAreaTab();
 }
 
 function getAllVisibleStaff(){
@@ -1581,15 +1780,22 @@ function getAllVisibleStaff(){
   return result;
 }
 
+var shimeiRankAsc=false, timeRankAsc=false;
+function toggleShimeiRank(){ shimeiRankAsc=!shimeiRankAsc; renderTotalShimei(); }
+function toggleTimeRank(){ timeRankAsc=!timeRankAsc; renderTotalTime(); }
+
 function renderTotalShimei(){
   var all=getAllVisibleStaff().filter(function(s){return s.shimeiTotal>0;});
-  all.sort(function(a,b){return b.shimeiTotal-a.shimeiTotal;});
-  var max=all.length>0?all[0].shimeiTotal:1;
+  all.sort(function(a,b){return shimeiRankAsc?a.shimeiTotal-b.shimeiTotal:b.shimeiTotal-a.shimeiTotal;});
+  var max=all.reduce(function(m,s){return Math.max(m,s.shimeiTotal);},1);
+  var btn=document.getElementById('btn-shimei-rank-sort');
+  if(btn) btn.textContent=shimeiRankAsc?'⬆ 低い順':'⬇ 高い順';
   document.getElementById('total-shimei-tbody').innerHTML=all.map(function(s,i){
-    var rc=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    var rank=shimeiRankAsc?(all.length-i):(i+1);
+    var rc=rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
     var bar=Math.round(s.shimeiTotal/max*100);
     return '<tr>'
-      +'<td><span class="rank '+rc+'">'+(i+1)+'</span>'+s.name+'</td>'
+      +'<td><span class="rank '+rc+'">'+rank+'</span>'+s.name+'</td>'
       +'<td style="font-family:sans-serif;font-size:11px;color:var(--text2);">'+s.store+'</td>'
       +'<td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:'+bar+'%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div><span>'+s.shimeiTotal+'件</span></div></td>'
       +'<td>'+s.shimeiM+'</td>'
@@ -1601,13 +1807,16 @@ function renderTotalShimei(){
 
 function renderTotalTime(){
   var all=getAllVisibleStaff().filter(function(s){return s.totalTime>0;});
-  all.sort(function(a,b){return b.totalTime-a.totalTime;});
-  var max=all.length>0?all[0].totalTime:1;
+  all.sort(function(a,b){return timeRankAsc?a.totalTime-b.totalTime:b.totalTime-a.totalTime;});
+  var max=all.reduce(function(m,s){return Math.max(m,s.totalTime);},1);
+  var btn=document.getElementById('btn-time-rank-sort');
+  if(btn) btn.textContent=timeRankAsc?'⬆ 低い順':'⬇ 高い順';
   document.getElementById('total-time-tbody').innerHTML=all.map(function(s,i){
-    var rc=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    var rank=timeRankAsc?(all.length-i):(i+1);
+    var rc=rank===1?'r1':rank===2?'r2':rank===3?'r3':'rn';
     var bar=Math.round(s.totalTime/max*100);
     return '<tr>'
-      +'<td><span class="rank '+rc+'">'+(i+1)+'</span>'+s.name+'</td>'
+      +'<td><span class="rank '+rc+'">'+rank+'</span>'+s.name+'</td>'
       +'<td style="font-family:sans-serif;font-size:11px;color:var(--text2);">'+s.store+'</td>'
       +'<td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:'+bar+'%;background:linear-gradient(90deg,var(--accent3),var(--accent))"></div></div><span>'+s.totalTime+'h</span></div></td>'
       +'<td>'+s.shimeiM+'</td>'
@@ -1877,7 +2086,16 @@ function renderStaffConfig(){
       +'</tr>';
   }).join('');
 
+  // 保存／キャンセルバー（店舗詳細内のスタッフ設定と統一）
+  var dirtyNote=_cfgDirty?'<span style="color:var(--danger);font-size:12px;font-weight:600;">未保存の変更があります</span>':'<span style="color:var(--text3);font-size:12px;">変更後「保存して戻る」を押してください</span>';
+  var saveBar='<div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">'
+    +'<button onclick="cfgSave()" style="padding:9px 20px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-family:Noto Sans JP,sans-serif;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));">💾 保存して戻る</button>'
+    +'<button onclick="cfgCancel()" style="padding:9px 18px;border-radius:9px;border:1px solid var(--border);cursor:pointer;font-size:13px;font-family:Noto Sans JP,sans-serif;background:var(--surface2);color:var(--text2);">✕ キャンセル</button>'
+    +dirtyNote
+    +'</div>';
+
   document.getElementById('cfg-content').innerHTML=''
+    +saveBar
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">'
     +'<span style="font-size:14px;font-weight:700;">'+nengetsu.slice(0,4)+'年'+parseInt(nengetsu.slice(4,6))+'月 / '+storeName+'</span>'
     +'<span style="font-size:12px;color:var(--text3);">'+staffList.length+'名中 '+hiddenCnt+'名を非表示</span>'
@@ -1888,24 +2106,47 @@ function renderStaffConfig(){
     +'</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
+// 編集中フラグとバックアップ（保存/キャンセル用）
+var _cfgDirty=false;
+var _cfgBackup=null;
+function cfgBeginEditIfNeeded(){
+  // 初回編集時に現状をバックアップ
+  if(!_cfgDirty){
+    _cfgBackup=JSON.parse(JSON.stringify(hiddenStaff));
+    _cfgDirty=true;
+  }
+}
+function cfgSave(){
+  saveHiddenStaff();
+  _cfgDirty=false; _cfgBackup=null;
+  renderStaffConfig();
+  // 反映を即時化：現在表示中の画面があれば再描画
+  if(typeof renderOverview==='function' && document.getElementById('overview') && document.getElementById('overview').style.display!=='none'){ try{renderOverview();}catch(e){} }
+}
+function cfgCancel(){
+  if(_cfgBackup){ hiddenStaff=JSON.parse(JSON.stringify(_cfgBackup)); }
+  _cfgDirty=false; _cfgBackup=null;
+  renderStaffConfig();
+}
+
 function cfgToggleStaff(btn){
   var nengetsu=cfgNengetsu();
   var storeName=decodeURIComponent(document.getElementById('cfg-store').value);
   var staffName=decodeURIComponent(btn.getAttribute('data-staff'));
+  cfgBeginEditIfNeeded();
   ensureMonthSettingsFor(nengetsu);
   if(!hiddenStaff[nengetsu][storeName]) hiddenStaff[nengetsu][storeName]={};
   var m=hiddenStaff[nengetsu][storeName];
   if(m[staffName]) delete m[staffName]; else m[staffName]=true;
-  saveHiddenStaff();
   renderStaffConfig();
 }
 
 function cfgShowAll(){
   var nengetsu=cfgNengetsu();
   var storeName=decodeURIComponent(document.getElementById('cfg-store').value);
-  if(hiddenStaff[nengetsu]&&hiddenStaff[nengetsu][storeName]){
+  if(hiddenStaff[nengetsu]&&hiddenStaff[nengetsu][storeName]&&Object.keys(hiddenStaff[nengetsu][storeName]).length>0){
+    cfgBeginEditIfNeeded();
     hiddenStaff[nengetsu][storeName]={};
-    saveHiddenStaff();
     renderStaffConfig();
   }
 }
