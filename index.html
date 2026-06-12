@@ -1785,7 +1785,10 @@ function toggleTimeRank(){ timeRankAsc=!timeRankAsc; renderTotalTime(); }
 
 function renderTotalShimei(){
   var all=getAllVisibleStaff().filter(function(s){return s.shimeiTotal>0;});
-  all.sort(function(a,b){return shimeiRankAsc?a.shimeiTotal-b.shimeiTotal:b.shimeiTotal-a.shimeiTotal;});
+  all.sort(function(a,b){
+    if(a.shimeiTotal!==b.shimeiTotal) return shimeiRankAsc?a.shimeiTotal-b.shimeiTotal:b.shimeiTotal-a.shimeiTotal;
+    return (b.totalTime||0)-(a.totalTime||0);
+  });
   var max=all.reduce(function(m,s){return Math.max(m,s.shimeiTotal);},1);
   var btn=document.getElementById('btn-shimei-rank-sort');
   if(btn) btn.textContent=shimeiRankAsc?'⬆ 低い順':'⬇ 高い順';
@@ -2220,7 +2223,10 @@ function buildStaffSection(storeName,settingMode){
 
   // ランキングモード
   var visible=staffList.filter(function(s){return !isHidden(storeName,s.name);});
-  var byShimei=visible.filter(function(s){return s.shimeiTotal>0;}).sort(function(a,b){return b.shimeiTotal-a.shimeiTotal;});
+  var byShimei=visible.filter(function(s){return s.shimeiTotal>0;}).sort(function(a,b){
+    if(a.shimeiTotal!==b.shimeiTotal) return b.shimeiTotal-a.shimeiTotal;
+    return (b.totalTime||0)-(a.totalTime||0);
+  });
   var byTime=visible.filter(function(s){return s.totalTime>0;}).sort(function(a,b){return b.totalTime-a.totalTime;});
   var maxS=byShimei.length>0?byShimei[0].shimeiTotal:1;
   var maxT=byTime.length>0?byTime[0].totalTime:1;
