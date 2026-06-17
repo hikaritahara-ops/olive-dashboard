@@ -210,7 +210,7 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
         <thead><tr>
           <th style="text-align:left">スタッフ名</th>
           <th style="text-align:left">店舗</th>
-          <th>指名件数</th><th>男性</th><th>女性</th><th>指名率</th>
+          <th>指名件数</th><th>男性</th><th>女性</th><th>指名率</th><th>施術時間</th>
         </tr></thead>
         <tbody id="total-shimei-tbody"></tbody>
       </table></div>
@@ -1803,6 +1803,7 @@ function renderTotalShimei(){
       +'<td>'+s.shimeiM+'</td>'
       +'<td>'+s.shimeiF+'</td>'
       +'<td>'+(s.rate>0?s.rate.toFixed(1)+'%':'－')+'</td>'
+      +'<td>'+(s.totalTime>0?s.totalTime+'h':'－')+'</td>'
       +'</tr>';
   }).join('');
 }
