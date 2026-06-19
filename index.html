@@ -250,6 +250,8 @@ tfoot td:first-child{text-align:left;font-family:'Noto Sans JP',sans-serif;}
         <div class="chart-card"><div class="chart-title">平均達成率推移</div><div class="chart-wrap" style="height:250px;"><canvas id="chart-trend-tassei"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">お断り件数推移</div><div class="chart-wrap" style="height:250px;"><canvas id="chart-trend-okot"></canvas></div></div>
       </div>
+      <div class="section-title" style="margin-top:8px;">月次データ一覧 <span style="font-weight:400;color:var(--text3);font-size:10px;">— 全店舗合計／表示範囲の全期間</span></div>
+      <div style="overflow-x:auto;margin-bottom:24px;"><table class="store-table" id="trend-table"></table></div>
       <div id="insight-trend"></div>
     </div>
 
@@ -1640,7 +1642,53 @@ function renderTrend(){
     }
   }
   buildTrendInsight();
+  renderTrendTable();
   renderCompare();
+}
+
+function renderTrendTable(){
+  var el=document.getElementById('trend-table');
+  if(!el) return;
+  var head='<thead><tr>'
+    +'<th style="text-align:left;white-space:nowrap;">年月</th>'
+    +'<th>売上</th><th>売上目標</th><th>達成率</th><th>前年比</th><th>客単価</th>'
+    +'<th>総客数</th><th>施術</th><th>お断り</th><th>新規</th><th>既存</th>'
+    +'<th>アロマ</th><th>ヒリスト</th><th>ドライ</th><th>マグマ</th><th>現金</th><th>カード</th>'
+    +'</tr></thead>';
+  function yen(v){return v>0?'¥'+fmt(v):'－';}
+  var rows=getFilteredTrend().map(function(h){
+    var nen=String(h.nengetsu);
+    var ym=nen.slice(0,4)+'/'+nen.slice(4,6);
+    var list=Object.values(h.stores||{}).filter(function(s){return s.uriage>0;});
+    if(list.length===0) return '<tr><td style="text-align:left;white-space:nowrap;font-weight:600;">'+ym+'</td><td colspan="16" style="color:var(--text3);text-align:left;">データなし</td></tr>';
+    function sum(k){return list.reduce(function(a,s){return a+toN(s[k]);},0);}
+    var uriage=sum('uriage'), mokuhyo=sum('mokuhyo'), total=sum('total'), okot=sum('okotowari');
+    var sokyaku=total+okot;
+    var tas=mokuhyo>0?uriage/mokuhyo*100:0;
+    var tanka=total>0?Math.round(uriage/total):0;
+    var zw=0,zd=0; list.forEach(function(s){var z=toN(s.sakunenRatio); if(z>0){zw+=z*(s.uriage||0); zd+=(s.uriage||0);}});
+    var zen=zd>0?zw/zd:0;
+    return '<tr>'
+      +'<td style="text-align:left;white-space:nowrap;font-weight:600;">'+ym+'</td>'
+      +'<td>'+yen(uriage)+'</td>'
+      +'<td>'+(mokuhyo>0?'¥'+fmt(mokuhyo):'－')+'</td>'
+      +'<td>'+(tas>0?tas.toFixed(1)+'%':'－')+'</td>'
+      +'<td>'+(zen>0?zen.toFixed(1)+'%':'－')+'</td>'
+      +'<td>'+yen(tanka)+'</td>'
+      +'<td>'+fmt(sokyaku)+'</td>'
+      +'<td>'+fmt(total)+'</td>'
+      +'<td>'+fmt(okot)+'</td>'
+      +'<td>'+fmt(sum('shinki'))+'</td>'
+      +'<td>'+fmt(sum('kaiin'))+'</td>'
+      +'<td>'+yen(sum('aromaKin'))+'</td>'
+      +'<td>'+yen(sum('hiristKin'))+'</td>'
+      +'<td>'+yen(sum('dryKin'))+'</td>'
+      +'<td>'+yen(sum('magmaKin'))+'</td>'
+      +'<td>'+yen(sum('genkin'))+'</td>'
+      +'<td>'+yen(sum('card'))+'</td>'
+      +'</tr>';
+  }).join('');
+  el.innerHTML=head+'<tbody>'+rows+'</tbody>';
 }
 
 function switchTrendTab(tab){
